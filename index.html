@@ -2,81 +2,696 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#070a12" />
-  <meta name="description" content="ScamShield AI — explainable AI inspection for suspicious job offers and recruitment messages." />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <meta
+    name="theme-color"
+    content="#070a12"
+  />
+
+  <meta
+    name="description"
+    content="ScamShield AI uses explainable AI to inspect suspicious job offers, recruitment messages, and URLs for potential scam indicators."
+  />
+
+  <meta
+    name="robots"
+    content="index, follow"
+  />
+
   <title>ScamShield AI — Fake Offer & Phishing Inspector</title>
+
+  <!-- Performance -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  >
+
   <link rel="stylesheet" href="/styles.css" />
 </head>
+
 <body>
+
 <div class="app-shell">
-  <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
+
+  <!-- Decorative background elements -->
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+
+  <!-- =========================
+       HEADER
+  ========================== -->
   <header class="topbar">
-    <button class="brand" data-nav="scanner" aria-label="ScamShield home">
-      <span class="brand-mark">⌁</span><span><strong>ScamShield</strong><small>AI SECURITY INSPECTOR</small></span>
+
+    <button
+      type="button"
+      class="brand"
+      data-nav="scanner"
+      aria-label="Go to ScamShield AI scanner home"
+    >
+      <span
+        class="brand-mark"
+        aria-hidden="true"
+      >⌁</span>
+
+      <span>
+        <strong>ScamShield</strong>
+        <small>AI SECURITY INSPECTOR</small>
+      </span>
     </button>
-    <nav><button data-nav="scanner" class="nav-active">Scanner</button><button data-nav="how">How it works</button><button data-nav="safety">Safety</button></nav>
-    <div class="status-pill"><span></span> AI READY</div>
+
+    <nav aria-label="Primary navigation">
+
+      <button
+        type="button"
+        data-nav="scanner"
+        class="nav-active"
+        aria-current="page"
+      >
+        Scanner
+      </button>
+
+      <button
+        type="button"
+        data-nav="how"
+      >
+        How it works
+      </button>
+
+      <button
+        type="button"
+        data-nav="safety"
+      >
+        Safety
+      </button>
+
+    </nav>
+
+    <div
+      class="status-pill"
+      role="status"
+      aria-label="ScamShield AI is ready"
+    >
+      <span aria-hidden="true"></span>
+      AI READY
+    </div>
+
   </header>
 
-  <main>
-    <section id="scanner" class="view active">
+
+  <!-- =========================
+       MAIN CONTENT
+  ========================== -->
+  <main id="main-content">
+
+    <!-- =========================
+         SCANNER
+    ========================== -->
+    <section
+      id="scanner"
+      class="view active"
+      aria-labelledby="scanner-title"
+    >
+
       <section class="hero-section">
+
+        <!-- Hero copy -->
         <div class="hero-copy">
-          <div class="eyebrow">✦ EXPLAINABLE AI FOR JOB-SEEKER SAFETY</div>
-          <h1>Don't lose your <span>dream job</span> to a fake offer.</h1>
-          <p class="hero-subtitle">Inspect suspicious recruitment messages before you pay, share documents, or trust the sender.</p>
-          <div class="trust-row"><span>⌕ No account required</span><span>ϟ Fast AI analysis</span><span>✓ Evidence-first results</span></div>
+
+          <div class="eyebrow">
+            <span aria-hidden="true">✦</span>
+            EXPLAINABLE AI FOR JOB-SEEKER SAFETY
+          </div>
+
+          <h1 id="scanner-title">
+            Don't lose your
+            <span>dream job</span>
+            to a fake offer.
+          </h1>
+
+          <p class="hero-subtitle">
+            Inspect suspicious recruitment messages before you pay,
+            share documents, or trust the sender.
+          </p>
+
+          <div class="trust-row">
+
+            <span>
+              <span aria-hidden="true">⌕</span>
+              No account required
+            </span>
+
+            <span>
+              <span aria-hidden="true">ϟ</span>
+              Fast AI analysis
+            </span>
+
+            <span>
+              <span aria-hidden="true">✓</span>
+              Evidence-first results
+            </span>
+
+          </div>
+
         </div>
+
+
+        <!-- Scanner card -->
         <div class="scanner-card glass-card">
-          <div class="card-heading"><div><span class="section-kicker">SECURITY SCANNER</span><h2>Inspect a suspicious offer</h2></div><div class="scan-icon">⌕</div></div>
-          <label class="field-label" for="offer">Offer / appointment letter <span>recommended</span></label>
-          <textarea id="offer" rows="9" maxlength="18000" placeholder="Paste the job offer, recruiter message, or appointment letter here..."></textarea>
-          <div class="field-meta"><span id="charCount">0 / 18,000 characters</span><button id="demoBtn">✦ Load safe demo</button></div>
-          <div class="or-divider"><span>OPTIONAL</span></div>
-          <label class="field-label" for="url">Suspicious URL <span>domain signals</span></label>
-          <div class="url-input"><span>◎</span><input id="url" type="url" placeholder="https://example.com/job-offer" /></div>
-          <div id="errorBox" class="error-box hidden"><span>!</span><span id="errorText"></span><button id="errorClose">×</button></div>
-          <button id="scanBtn" class="scan-button">⌕ Analyze with ScamShield AI <span>→</span></button>
-          <p class="privacy-note">⌑ Your scan is processed for this request. ScamShield does not require an account.</p>
+
+          <div class="card-heading">
+
+            <div>
+              <span class="section-kicker">
+                SECURITY SCANNER
+              </span>
+
+              <h2 id="scanner-card-title">
+                Inspect a suspicious offer
+              </h2>
+            </div>
+
+            <div
+              class="scan-icon"
+              aria-hidden="true"
+            >
+              ⌕
+            </div>
+
+          </div>
+
+
+          <!-- Offer input -->
+          <div class="field-group">
+
+            <label
+              class="field-label"
+              for="offer"
+            >
+              Offer / appointment letter
+              <span>recommended</span>
+            </label>
+
+            <textarea
+              id="offer"
+              name="offerText"
+              rows="9"
+              maxlength="18000"
+              autocomplete="off"
+              spellcheck="true"
+              aria-describedby="offerHelp charCount"
+              placeholder="Paste the job offer, recruiter message, or appointment letter here..."
+            ></textarea>
+
+            <p
+              id="offerHelp"
+              class="sr-only"
+            >
+              Paste the job offer, recruitment message, or appointment
+              letter you want ScamShield AI to inspect.
+            </p>
+
+          </div>
+
+
+          <!-- Character count + demo -->
+          <div class="field-meta">
+
+            <span
+              id="charCount"
+              aria-live="polite"
+            >
+              0 / 18,000 characters
+            </span>
+
+            <button
+              type="button"
+              id="demoBtn"
+              aria-label="Load a fictional safe demonstration offer"
+            >
+              <span aria-hidden="true">✦</span>
+              Load safe demo
+            </button>
+
+          </div>
+
+
+          <div
+            class="or-divider"
+            aria-hidden="true"
+          >
+            <span>OPTIONAL</span>
+          </div>
+
+
+          <!-- URL input -->
+          <div class="field-group">
+
+            <label
+              class="field-label"
+              for="url"
+            >
+              Suspicious URL
+              <span>domain signals</span>
+            </label>
+
+            <div class="url-input">
+
+              <span
+                aria-hidden="true"
+              >◎</span>
+
+              <input
+                id="url"
+                name="url"
+                type="url"
+                inputmode="url"
+                autocomplete="url"
+                spellcheck="false"
+                maxlength="2000"
+                aria-describedby="urlHelp"
+                placeholder="https://example.com/job-offer"
+              />
+
+            </div>
+
+            <p
+              id="urlHelp"
+              class="sr-only"
+            >
+              Optional. Add the URL associated with the job offer
+              for additional domain-related signals.
+            </p>
+
+          </div>
+
+
+          <!-- Error message -->
+          <div
+            id="errorBox"
+            class="error-box hidden"
+            role="alert"
+            aria-live="assertive"
+            aria-atomic="true"
+          >
+
+            <span
+              aria-hidden="true"
+            >!</span>
+
+            <span id="errorText"></span>
+
+            <button
+              type="button"
+              id="errorClose"
+              aria-label="Dismiss error message"
+              title="Dismiss error"
+            >
+              ×
+            </button>
+
+          </div>
+
+
+          <!-- Loading status -->
+          <div
+            id="loading"
+            class="loading-status hidden"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-hidden="true"
+          >
+            <span
+              class="loading-spinner"
+              aria-hidden="true"
+            ></span>
+
+            Analyzing offer with ScamShield AI...
+          </div>
+
+
+          <!-- Scan button -->
+          <button
+            type="button"
+            id="scanBtn"
+            class="scan-button"
+            aria-describedby="scanHelp"
+          >
+            <span aria-hidden="true">⌕</span>
+            Analyze with ScamShield AI
+            <span aria-hidden="true">→</span>
+          </button>
+
+          <p
+            id="scanHelp"
+            class="sr-only"
+          >
+            ScamShield analyzes the supplied offer and optional URL
+            for employment scam and phishing indicators.
+          </p>
+
+
+          <p class="privacy-note">
+            <span aria-hidden="true">⌑</span>
+            Your scan is processed for this request.
+            ScamShield does not require an account.
+          </p>
+
         </div>
+
       </section>
-      <section class="below-grid">
-        <div class="mini-card"><div class="mini-icon">₹</div><h3>Payment traps</h3><p>Flags registration, equipment, training, processing, and deposit payment requests.</p></div>
-        <div class="mini-card"><div class="mini-icon">◷</div><h3>Urgency signals</h3><p>Surfaces pressure tactics that try to make you act before you can verify the opportunity.</p></div>
-        <div class="mini-card"><div class="mini-icon">◎</div><h3>Domain context</h3><p>When a URL is supplied, ScamShield attempts public RDAP lookup and clearly reports unavailable data.</p></div>
+
+
+      <!-- Feature cards -->
+      <section
+        class="below-grid"
+        aria-label="Scam detection capabilities"
+      >
+
+        <article class="mini-card">
+
+          <div
+            class="mini-icon"
+            aria-hidden="true"
+          >₹</div>
+
+          <h3>Payment traps</h3>
+
+          <p>
+            Flags registration, equipment, training, processing,
+            and deposit payment requests.
+          </p>
+
+        </article>
+
+
+        <article class="mini-card">
+
+          <div
+            class="mini-icon"
+            aria-hidden="true"
+          >◷</div>
+
+          <h3>Urgency signals</h3>
+
+          <p>
+            Surfaces pressure tactics that try to make you act
+            before you can verify the opportunity.
+          </p>
+
+        </article>
+
+
+        <article class="mini-card">
+
+          <div
+            class="mini-icon"
+            aria-hidden="true"
+          >◎</div>
+
+          <h3>Domain context</h3>
+
+          <p>
+            When a URL is supplied, ScamShield attempts public
+            RDAP lookup and clearly reports unavailable data.
+          </p>
+
+        </article>
+
       </section>
+
     </section>
 
-    <section id="result" class="view"></section>
 
-    <section id="how" class="view info-page">
-      <div class="info-hero"><span class="section-kicker">HOW IT WORKS</span><h1>From suspicious message to explainable risk.</h1><p>ScamShield combines deterministic signals with Google Gemini analysis, then presents the evidence in a way a job seeker can understand.</p></div>
+    <!-- =========================
+         RESULTS
+    ========================== -->
+    <section
+      id="result"
+      class="view"
+      aria-labelledby="result-title"
+      aria-live="polite"
+      aria-atomic="true"
+    ></section>
+
+
+    <!-- =========================
+         HOW IT WORKS
+    ========================== -->
+    <section
+      id="how"
+      class="view info-page"
+      aria-labelledby="how-title"
+    >
+
+      <div class="info-hero">
+
+        <span class="section-kicker">
+          HOW IT WORKS
+        </span>
+
+        <h1 id="how-title">
+          From suspicious message to explainable risk.
+        </h1>
+
+        <p>
+          ScamShield combines deterministic signals with Google Gemini
+          analysis, then presents the evidence in a way a job seeker
+          can understand.
+        </p>
+
+      </div>
+
+
       <div class="steps-grid">
-        <article class="step-card"><span>01</span><h3>Submit</h3><p>Paste the offer text and optionally add the suspicious URL.</p></article>
-        <article class="step-card"><span>02</span><h3>Inspect</h3><p>Local checks surface payment, urgency, credential, document, and unrealistic-promise signals.</p></article>
-        <article class="step-card"><span>03</span><h3>Reason</h3><p>Google Gemini evaluates the evidence and returns structured, explainable findings.</p></article>
-        <article class="step-card"><span>04</span><h3>Act</h3><p>A transparent threat index is paired with verification steps and a “don’t share” list.</p></article>
+
+        <article class="step-card">
+          <span aria-hidden="true">01</span>
+          <h3>Submit</h3>
+          <p>
+            Paste the offer text and optionally add the suspicious URL.
+          </p>
+        </article>
+
+        <article class="step-card">
+          <span aria-hidden="true">02</span>
+          <h3>Inspect</h3>
+          <p>
+            Local checks surface payment, urgency, credential,
+            document, and unrealistic-promise signals.
+          </p>
+        </article>
+
+        <article class="step-card">
+          <span aria-hidden="true">03</span>
+          <h3>Reason</h3>
+          <p>
+            Google Gemini evaluates the evidence and returns
+            structured, explainable findings.
+          </p>
+        </article>
+
+        <article class="step-card">
+          <span aria-hidden="true">04</span>
+          <h3>Act</h3>
+          <p>
+            A transparent threat index is paired with verification
+            steps and a "don't share" list.
+          </p>
+        </article>
+
       </div>
-      <button class="scan-button compact" data-nav="scanner">⌕ Start a scan</button>
+
+
+      <button
+        type="button"
+        class="scan-button compact"
+        data-nav="scanner"
+      >
+        <span aria-hidden="true">⌕</span>
+        Start a scan
+      </button>
+
     </section>
 
-    <section id="safety" class="view info-page">
-      <div class="info-hero"><span class="section-kicker">SAFETY & PRIVACY</span><h1>Use AI as a second pair of eyes.</h1><p>ScamShield is a defensive screening tool. It does not guarantee that an offer is legitimate or fraudulent.</p></div>
-      <div class="safety-grid">
-        <article><div class="safe-icon">⌑</div><h3>Minimal data handling</h3><p>The MVP does not require an account or permanent scan history.</p></article>
-        <article><div class="safe-icon">✓</div><h3>Secrets stay server-side</h3><p>The Google AI credential lives only in the server environment, never in the browser bundle.</p></article>
-        <article><div class="safe-icon">?</div><h3>Know the limits</h3><p>Unavailable domain data is reported as unavailable. ScamShield does not invent verification results.</p></article>
+
+    <!-- =========================
+         SAFETY
+    ========================== -->
+    <section
+      id="safety"
+      class="view info-page"
+      aria-labelledby="safety-title"
+    >
+
+      <div class="info-hero">
+
+        <span class="section-kicker">
+          SAFETY & PRIVACY
+        </span>
+
+        <h1 id="safety-title">
+          Use AI as a second pair of eyes.
+        </h1>
+
+        <p>
+          ScamShield is a defensive screening tool.
+          It does not guarantee that an offer is legitimate or fraudulent.
+        </p>
+
       </div>
-      <div class="warning-callout"><span>!</span><div><strong>Never send money or sensitive credentials because an AI tool says an offer is safe.</strong><p>Independently verify employers through trusted channels before paying or sharing sensitive information.</p></div></div>
-      <button class="scan-button compact" data-nav="scanner">⌕ Inspect an offer</button>
+
+
+      <div class="safety-grid">
+
+        <article>
+
+          <div
+            class="safe-icon"
+            aria-hidden="true"
+          >⌑</div>
+
+          <h3>Minimal data handling</h3>
+
+          <p>
+            The MVP does not require an account or permanent scan history.
+          </p>
+
+        </article>
+
+
+        <article>
+
+          <div
+            class="safe-icon"
+            aria-hidden="true"
+          >✓</div>
+
+          <h3>Secrets stay server-side</h3>
+
+          <p>
+            The Google AI credential lives only in the server environment,
+            never in the browser bundle.
+          </p>
+
+        </article>
+
+
+        <article>
+
+          <div
+            class="safe-icon"
+            aria-hidden="true"
+          >?</div>
+
+          <h3>Know the limits</h3>
+
+          <p>
+            Unavailable domain data is reported as unavailable.
+            ScamShield does not invent verification results.
+          </p>
+
+        </article>
+
+      </div>
+
+
+      <aside
+        class="warning-callout"
+        aria-label="Important safety warning"
+      >
+
+        <span
+          aria-hidden="true"
+        >!</span>
+
+        <div>
+
+          <strong>
+            Never send money or sensitive credentials because
+            an AI tool says an offer is safe.
+          </strong>
+
+          <p>
+            Independently verify employers through trusted channels
+            before paying or sharing sensitive information.
+          </p>
+
+        </div>
+
+      </aside>
+
+
+      <button
+        type="button"
+        class="scan-button compact"
+        data-nav="scanner"
+      >
+        <span aria-hidden="true">⌕</span>
+        Inspect an offer
+      </button>
+
     </section>
+
   </main>
-  <footer><div><span class="footer-mark">⌁</span> ScamShield AI</div><span>Defensive screening, not a definitive fraud determination.</span><span>Built for PromptWars × GEN AI Club</span></footer>
+
+
+  <!-- =========================
+       FOOTER
+  ========================== -->
+  <footer>
+
+    <div>
+      <span
+        class="footer-mark"
+        aria-hidden="true"
+      >⌁</span>
+
+      ScamShield AI
+    </div>
+
+    <span>
+      Defensive screening, not a definitive fraud determination.
+    </span>
+
+    <span>
+      Built for PromptWars × GEN AI Club
+    </span>
+
+  </footer>
+
 </div>
+
+
+<!--
+  Screen-reader-only utility.
+  Keeps descriptive content available to assistive technologies
+  without changing the visual design.
+-->
+<style>
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>
+
+
 <script src="/app.js"></script>
+
 </body>
 </html>

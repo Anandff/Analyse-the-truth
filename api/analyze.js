@@ -2,6 +2,11 @@ const { GoogleGenAI } = require("@google/genai");
 
 const MODEL = "gemini-3.5-flash-lite";
 
+const MAX_OFFER_LENGTH = 10000;
+const MAX_URL_LENGTH = 2000;
+const MAX_RETRIES = 2;
+const REQUEST_TIMEOUT = 30000;
+
 function sendJson(res, statusCode, data) {
   // Vercel serverless response
   if (typeof res.status === "function" && typeof res.json === "function") {
@@ -117,14 +122,14 @@ async function handler(req, res) {
     const body = req.body || {};
 
     const offerText =
-      typeof body.offerText === "string"
-        ? body.offerText.trim().slice(0, 15000)
-        : "";
+  typeof body.offerText === "string"
+    ? body.offerText.trim().slice(0, MAX_OFFER_LENGTH)
+    : "";
 
-    const submittedUrl =
-      typeof body.url === "string"
-        ? body.url.trim().slice(0, 2000)
-        : "";
+const submittedUrl =
+  typeof body.url === "string"
+    ? body.url.trim().slice(0, MAX_URL_LENGTH)
+    : "";
 
     if (!offerText && !submittedUrl) {
       return sendJson(res, 400, {
@@ -159,8 +164,7 @@ async function handler(req, res) {
     const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
   httpOptions: {
-    timeout: 60000,
-    headers: {},
+    timeout: REQUEST_TIMEOUT,
   },
 });
 
@@ -227,7 +231,7 @@ console.log("Sending request to Gemini...");
     let response;
 let lastError;
 
-for (let attempt = 1; attempt <= 3; attempt++) {
+for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
   try {
     console.log(`Gemini attempt ${attempt}/3...`);
 
@@ -252,8 +256,8 @@ for (let attempt = 1; attempt <= 3; attempt++) {
       error?.message || error
     );
 
-    if (attempt < 3) {
-      const waitTime = attempt * 1500;
+    if (attempt < MAX_RETRIES) {
+  const waitTime = attempt * 1000;
 
       console.log(
         `Retrying Gemini in ${waitTime}ms...`

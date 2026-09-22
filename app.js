@@ -1,902 +1,936 @@
-const $ = (selector) => document.querySelector(selector)
+"use strict";
 
-const offer = $('#offer')
-const url = $('#url')
-const scanBtn = $('#scanBtn')
-const demoBtn = $('#demoBtn')
-const resultView = $('#result')
-const errorBox = $('#errorBox')
-const errorText = $('#errorText')
-let scanInProgress = false
+/* =========================================================
+   ScamShield AI — Frontend Application
+   ========================================================= */
 
-const DEMO_OFFER = `Congratulations! You have been selected for the Senior Operations Executive role. Your salary will be ₹8,40,000 per year. To complete your joining formalities, please pay a refundable equipment and registration fee of ₹4,999 within the next 2 hours. You are guaranteed placement and no interview is required. Send your Aadhaar card, PAN card and bank details to hr.recruitment@career-fast-jobs.example. Failure to pay today will cancel your appointment.`
+const API_ENDPOINT = "/api/analyze";
 
-const DEMO_URL = 'https://career-fast-jobs.example/apply'
+const MAX_OFFER_LENGTH = 18000;
+const MAX_URL_LENGTH = 2000;
+
+/* =========================================================
+   Demo Data
+   ========================================================= */
+
+const DEMO_OFFER = `
+Subject: Congratulations! You Are Selected for Immediate Joining
+
+Dear Candidate,
+
+Congratulations! You have been selected for the position of Junior
+Software Developer with a salary of ₹7,80,000 per annum.
+
+No interview is required because your profile has been directly selected.
+
+To complete your joining formalities, you must pay a refundable
+registration and equipment processing fee of ₹4,999 within the next
+2 hours.
+
+Please send your Aadhaar Card, PAN Card and bank account details.
+
+Failure to complete the payment today will result in cancellation
+of your selection.
+
+Regards,
+HR Recruitment Team
+`;
+
+const DEMO_URL =
+  "https://career-fast-jobs.example/apply";
 
 
-// ------------------------------------------------------------
-// Navigation
-// ------------------------------------------------------------
+/* =========================================================
+   DOM Helpers
+   ========================================================= */
 
-function showView(id) {
-  document
-    .querySelectorAll('.view')
-    .forEach((view) => {
-      view.classList.toggle('active', view.id === id)
-    })
+const $ = (selector) => document.querySelector(selector);
 
-  document
-    .querySelectorAll('[data-nav]')
-    .forEach((button) => {
-      button.classList.toggle(
-        'nav-active',
-        button.dataset.nav === id
-      )
-    })
+const elements = {
+  offer: $("#offer"),
+  url: $("#url"),
+  demoBtn: $("#demoBtn"),
+  charCount: $("#charCount"),
+  scanBtn: $("#scanBtn"),
+
+  errorBox: $("#errorBox"),
+  errorText: $("#errorText"),
+  errorClose: $("#errorClose"),
+
+  result: $("#result"),
+  loading: $("#loading"),
+
+  scanner: $("#scanner"),
+  how: $("#how"),
+  safety: $("#safety"),
+
+  navButtons: document.querySelectorAll("[data-nav]")
+};
+
+
+/* =========================================================
+   Application State
+   ========================================================= */
+
+const state = {
+  isScanning: false,
+  currentView: "scanner"
+};
+
+
+/* =========================================================
+   Utility Functions
+   ========================================================= */
+
+function escapeHtml(value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+
+function clamp(value, min, max) {
+  const number = Number(value);
+
+  if (!Number.isFinite(number)) {
+    return min;
+  }
+
+  return Math.max(min, Math.min(max, number));
+}
+
+
+function getRiskLabel(score) {
+  if (score >= 80) return "CRITICAL";
+  if (score >= 60) return "HIGH";
+  if (score >= 30) return "MEDIUM";
+
+  return "LOW";
+}
+
+
+function getRiskClass(score) {
+  if (score >= 80) return "critical";
+  if (score >= 60) return "high";
+  if (score >= 30) return "medium";
+
+  return "low";
+}
+
+
+function formatText(value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return escapeHtml(value);
+}
+
+
+/* =========================================================
+   Navigation
+   ========================================================= */
+
+function showView(viewName) {
+  const validViews = ["scanner", "result", "how", "safety"];
+
+  if (!validViews.includes(viewName)) {
+    viewName = "scanner";
+  }
+
+  state.currentView = viewName;
+
+  document.querySelectorAll(".view").forEach((view) => {
+    const isActive = view.id === viewName;
+
+    view.classList.toggle("active", isActive);
+    view.hidden = !isActive;
+  });
+
+  elements.navButtons.forEach((button) => {
+    const target = button.dataset.nav;
+
+    if (target === viewName) {
+      button.classList.add("nav-active");
+
+      if (target !== "scanner") {
+        button.setAttribute("aria-current", "page");
+      } else {
+        button.setAttribute("aria-current", "page");
+      }
+    } else {
+      button.classList.remove("nav-active");
+      button.removeAttribute("aria-current");
+    }
+  });
 
   window.scrollTo({
     top: 0,
-    behavior: 'smooth'
-  })
+    behavior: "smooth"
+  });
 }
 
-document.addEventListener('click', (event) => {
-  const nav = event.target.closest('[data-nav]')
 
-  if (nav) {
-    showView(nav.dataset.nav)
-  }
-})
+function initializeNavigation() {
+  elements.navButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      showView(button.dataset.nav);
+    });
+  });
+}
 
 
-// ------------------------------------------------------------
-// Helpers
-// ------------------------------------------------------------
+/* =========================================================
+   Error Handling
+   ========================================================= */
 
 function showError(message) {
-  errorText.textContent = message
-  errorBox.classList.remove('hidden')
+  if (!elements.errorBox || !elements.errorText) {
+    return;
+  }
+
+  elements.errorText.textContent =
+    message || "Something went wrong. Please try again.";
+
+  elements.errorBox.classList.remove("hidden");
+
+  elements.errorBox.setAttribute("aria-hidden", "false");
 }
+
 
 function hideError() {
-  errorBox.classList.add('hidden')
-}
-
-function esc(value) {
-  return String(value ?? '')
-    .replace(
-      /[&<>'"]/g,
-      (character) =>
-        ({
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          "'": '&#39;',
-          '"': '&quot;'
-        })[character]
-    )
-}
-
-function scoreClass(score) {
-  const value = Number(score) || 0
-
-  if (value >= 80) return 'critical'
-  if (value >= 60) return 'high'
-  if (value >= 35) return 'medium'
-
-  return 'low'
-}
-
-function iconFor(severity) {
-  const value = String(severity || '').toUpperCase()
-
-  if (value === 'CRITICAL' || value === 'HIGH') return '!'
-  if (value === 'MEDIUM') return '△'
-
-  return '?'
-}
-
-function safeScore(value) {
-  const number = Number(value)
-
-  if (!Number.isFinite(number)) return 0
-
-  return Math.min(100, Math.max(0, number))
-}
-
-
-// ------------------------------------------------------------
-// Character counter
-// ------------------------------------------------------------
-
-offer.addEventListener('input', () => {
-  charCount.textContent =
-    `${offer.value.length.toLocaleString()} / 18,000 characters`
-})
-
-
-// ------------------------------------------------------------
-// Demo
-// ------------------------------------------------------------
-
-demoBtn.addEventListener('click', () => {
-  offer.value = DEMO_OFFER
-  url.value = DEMO_URL
-
-  charCount.textContent =
-    `${offer.value.length.toLocaleString()} / 18,000 characters`
-
-  hideError()
-
-  showView('scanner')
-})
-
-
-// ------------------------------------------------------------
-// Error close
-// ------------------------------------------------------------
-
-$('#errorClose').addEventListener('click', hideError)
-
-
-// ------------------------------------------------------------
-// Scan
-// ------------------------------------------------------------
-
-scanBtn.addEventListener('click', async () => {
-  // Prevent duplicate requests
-  if (scanInProgress) return
-
-  hideError()
-
-  // Validate before locking the scan
-  if (
-    offer.value.trim().length < 30 &&
-    url.value.trim().length < 5
-  ) {
-    showError(
-      'Paste an offer message or add a URL before scanning.'
-    )
-    return
+  if (!elements.errorBox) {
+    return;
   }
 
-  scanInProgress = true
-  scanBtn.disabled = true
+  elements.errorBox.classList.add("hidden");
+  elements.errorBox.setAttribute("aria-hidden", "true");
+}
 
-  scanBtn.innerHTML =
-    '<span class="spinner"></span> Analyzing evidence...'
+
+function initializeErrorHandling() {
+  elements.errorClose?.addEventListener("click", hideError);
+}
+
+
+/* =========================================================
+   Loading State
+   ========================================================= */
+
+function setLoading(isLoading) {
+  if (!elements.loading) {
+    return;
+  }
+
+  elements.loading.classList.toggle("hidden", !isLoading);
+
+  elements.loading.setAttribute(
+    "aria-hidden",
+    String(!isLoading)
+  );
+
+  if (elements.scanBtn) {
+    elements.scanBtn.disabled = isLoading;
+
+    elements.scanBtn.setAttribute(
+      "aria-busy",
+      String(isLoading)
+    );
+
+    elements.scanBtn.innerHTML = isLoading
+      ? `
+        <span class="loading-spinner" aria-hidden="true"></span>
+        Analyzing...
+      `
+      : `
+        <span aria-hidden="true">⌕</span>
+        Analyze with ScamShield AI
+        <span aria-hidden="true">→</span>
+      `;
+  }
+}
+
+
+/* =========================================================
+   Character Counter
+   ========================================================= */
+
+function updateCharacterCount() {
+  if (!elements.offer || !elements.charCount) {
+    return;
+  }
+
+  const length = elements.offer.value.length;
+
+  elements.charCount.textContent =
+    `${length.toLocaleString()} / ${MAX_OFFER_LENGTH.toLocaleString()} characters`;
+
+  elements.charCount.setAttribute(
+    "aria-label",
+    `${length} of ${MAX_OFFER_LENGTH} characters used`
+  );
+}
+
+
+/* =========================================================
+   Demo Loader
+   ========================================================= */
+
+function loadDemo() {
+  if (state.isScanning) {
+    return;
+  }
+
+  if (elements.offer) {
+    elements.offer.value = DEMO_OFFER.trim();
+  }
+
+  if (elements.url) {
+    elements.url.value = DEMO_URL;
+  }
+
+  updateCharacterCount();
+  hideError();
+
+  elements.offer?.focus();
+}
+
+
+function initializeDemo() {
+  elements.demoBtn?.addEventListener("click", loadDemo);
+}
+
+
+/* =========================================================
+   Input Validation
+   ========================================================= */
+
+function getInput() {
+  const offerText = elements.offer?.value
+    ?.trim()
+    .slice(0, MAX_OFFER_LENGTH) || "";
+
+  const submittedUrl = elements.url?.value
+    ?.trim()
+    .slice(0, MAX_URL_LENGTH) || "";
+
+  return {
+    offerText,
+    submittedUrl
+  };
+}
+
+
+function validateUrl(url) {
+  if (!url) {
+    return true;
+  }
 
   try {
-    const response = await fetch('/api/analyze', {
-      method: 'POST',
+    const parsed = new URL(url);
 
-      headers: {
-        'Content-Type': 'application/json'
-      },
-
-      body: JSON.stringify({
-        offerText: offer.value,
-        url: url.value
-      })
-    })
-
-    let data
-
-    try {
-      data = await response.json()
-    } catch {
-      throw new Error(
-        'The server returned an invalid response.'
-      )
-    }
-
-    if (!response.ok) {
-      throw new Error(
-        data.error || 'Scan failed.'
-      )
-    }
-
-    if (!data.result) {
-      throw new Error(
-        'The AI returned an unexpected response format.'
-      )
-    }
-
-    renderResult({
-      ...data.result,
-      meta: data.meta || {}
-    })
-
-    showView('result')
-
-  } catch (error) {
-    console.error('Scan error:', error)
-
-    showError(
-      error.message ||
-      'Unable to scan this submission.'
-    )
-
-  } finally {
-    scanBtn.disabled = false
-    scanInProgress = false
-
-    scanBtn.innerHTML =
-      '⌕ Analyze with ScamShield AI <span>→</span>'
+    return ["http:", "https:"].includes(
+      parsed.protocol
+    );
+  } catch {
+    return false;
   }
-})
-
-
-// ------------------------------------------------------------
-// Render result
-// ------------------------------------------------------------
-
-function renderResult(result) {
-
-  const threatScore = safeScore(result.threatScore)
-  const confidence = safeScore(result.confidence)
-  const tone = scoreClass(threatScore)
-
-  // ----------------------------------------------------------
-  // RED FLAGS
-  // ----------------------------------------------------------
-
-  const flags = (result.redFlags || [])
-    .map((flag) => {
-
-      // Current backend returns strings
-      if (typeof flag === 'string') {
-
-  const text = flag.toLowerCase()
-
-  let category = 'Suspicious Activity'
-
-  if (
-    text.includes('payment') ||
-    text.includes('fee') ||
-    text.includes('money')
-  ) {
-    category = 'Upfront Payment Demand'
-  }
-  else if (
-    text.includes('interview') ||
-    text.includes('guaranteed placement') ||
-    text.includes('no interview')
-  ) {
-    category = 'No Interview / Guaranteed Job'
-  }
-  else if (
-    text.includes('aadhaar') ||
-    text.includes('pan') ||
-    text.includes('bank') ||
-    text.includes('identity') ||
-    text.includes('document')
-  ) {
-    category = 'Sensitive Documents Requested'
-  }
-  else if (
-    text.includes('hour') ||
-    text.includes('deadline') ||
-    text.includes('urgent') ||
-    text.includes('immediately')
-  ) {
-    category = 'Artificial Urgency'
-  }
-  else if (
-    text.includes('email') ||
-    text.includes('domain') ||
-    text.includes('website') ||
-    text.includes('recruiter')
-  ) {
-    category = 'Recruitment Identity Concern'
-  }
-
-  return `
-    <article class="flag high">
-
-      <div class="flag-icon">
-        !
-      </div>
-
-      <div>
-
-        <div class="flag-heading">
-
-          <strong>
-            ${esc(category)}
-          </strong>
-
-          <span>
-            DETECTED
-          </span>
-
-        </div>
-
-        <p>
-          ${esc(flag)}
-        </p>
-
-      </div>
-
-    </article>
-  `
 }
 
-      // Supports object-based responses too
-      const severity =
-        String(
-          flag?.severity || 'HIGH'
-        ).toUpperCase()
 
-      const category =
-        flag?.category ||
-        flag?.title ||
-        flag?.factor ||
-        'Risk signal'
+function validateInput(input) {
+  if (!input.offerText && !input.submittedUrl) {
+    return "Please paste an offer letter or provide a URL.";
+  }
 
-      const evidence =
-        flag?.evidence || ''
+  if (
+    input.submittedUrl &&
+    !validateUrl(input.submittedUrl)
+  ) {
+    return "Please enter a valid HTTP or HTTPS URL.";
+  }
 
-      const explanation =
-        flag?.explanation ||
-        flag?.reason ||
-        flag?.description ||
-        ''
+  return null;
+}
+
+
+/* =========================================================
+   API Request
+   ========================================================= */
+
+async function analyzeOffer(input) {
+  const response = await fetch(API_ENDPOINT, {
+    method: "POST",
+
+    headers: {
+      "Content-Type": "application/json"
+    },
+
+    body: JSON.stringify({
+      offerText: input.offerText,
+      url: input.submittedUrl
+    })
+  });
+
+  let data;
+
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error(
+      "The server returned an invalid response."
+    );
+  }
+
+  if (!response.ok || !data?.success) {
+    throw new Error(
+      data?.error ||
+      "The AI analysis failed. Please try again."
+    );
+  }
+
+  return data;
+}
+
+
+/* =========================================================
+   Result Normalization
+   ========================================================= */
+
+function normalizeResult(result = {}) {
+  const threatScore = clamp(
+    result.threatScore,
+    0,
+    100
+  );
+
+  const confidence = clamp(
+    result.confidence ?? 75,
+    0,
+    100
+  );
+
+  const riskLevel =
+    ["low", "medium", "high", "critical"].includes(
+      String(result.riskLevel).toLowerCase()
+    )
+      ? String(result.riskLevel).toLowerCase()
+      : getRiskClass(threatScore);
+
+  return {
+    threatScore,
+    confidence,
+    riskLevel,
+
+    verdict:
+      result.verdict ||
+      (
+        threatScore >= 80
+          ? "Highly suspicious"
+          : threatScore >= 60
+            ? "Suspicious"
+            : threatScore >= 30
+              ? "Needs verification"
+              : "Lower risk"
+      ),
+
+    summary:
+      typeof result.summary === "string"
+        ? result.summary
+        : "The submitted content was analyzed for common job-scam indicators.",
+
+    redFlags: Array.isArray(result.redFlags)
+      ? result.redFlags.slice(0, 8)
+      : [],
+
+    breakdown: Array.isArray(result.breakdown)
+      ? result.breakdown.slice(0, 8)
+      : [],
+
+    verificationSteps: Array.isArray(result.verificationSteps)
+      ? result.verificationSteps.slice(0, 8)
+      : [],
+
+    doNotShare: Array.isArray(result.doNotShare)
+      ? result.doNotShare.slice(0, 8)
+      : [],
+
+    positiveSignals: Array.isArray(result.positiveSignals)
+      ? result.positiveSignals.slice(0, 8)
+      : [],
+
+    limitations: Array.isArray(result.limitations)
+      ? result.limitations.slice(0, 8)
+      : []
+  };
+}
+
+
+/* =========================================================
+   List Rendering
+   ========================================================= */
+
+function renderList(items, emptyMessage = "None identified.") {
+  if (!Array.isArray(items) || items.length === 0) {
+    return `<li class="empty-item">${escapeHtml(emptyMessage)}</li>`;
+  }
+
+  return items
+    .map((item) => {
+      const text =
+        typeof item === "string"
+          ? item
+          : item?.reason || item?.factor || "";
 
       return `
-        <article class="flag ${severity.toLowerCase()}">
+        <li>
+          ${formatText(text)}
+        </li>
+      `;
+    })
+    .join("");
+}
 
-          <div class="flag-icon">
-            ${iconFor(severity)}
+
+function renderBreakdown(items) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return `
+      <div class="empty-state">
+        No detailed breakdown was returned.
+      </div>
+    `;
+  }
+
+  return items
+    .map((item) => {
+      const factor = escapeHtml(
+        item?.factor || "Risk factor"
+      );
+
+      const reason = escapeHtml(
+        item?.reason || "No additional explanation provided."
+      );
+
+      const impact = clamp(
+        item?.impact ?? 0,
+        -100,
+        100
+      );
+
+      return `
+        <article class="breakdown-item">
+
+          <div class="breakdown-header">
+            <strong>${factor}</strong>
+
+            <span>
+              ${impact > 0 ? "+" : ""}
+              ${impact}
+            </span>
           </div>
 
-          <div>
-
-            <div class="flag-heading">
-
-              <strong>
-                ${esc(category)}
-              </strong>
-
-              <span>
-                ${esc(severity)}
-              </span>
-
-            </div>
-
-            ${
-              evidence
-                ? `
-                  <p class="evidence">
-                    “${esc(evidence)}”
-                  </p>
-                `
-                : ''
-            }
-
-            <p>
-              ${esc(explanation)}
-            </p>
-
-          </div>
+          <p>${reason}</p>
 
         </article>
-      `
+      `;
     })
-    .join('')
+    .join("");
+}
 
 
-  const flagsHtml =
-    flags ||
-    `
-      <div class="empty-result">
-        ✓ No major red flags were identified from the available evidence.
-      </div>
-    `
+/* =========================================================
+   Result Rendering
+   ========================================================= */
 
+function renderResults(data) {
+  const result = normalizeResult(data?.result);
 
-  // ----------------------------------------------------------
-  // THREAT BREAKDOWN
-  // Backend:
-  // {
-  //   factor: "...",
-  //   impact: 80,
-  //   reason: "..."
-  // }
-  // ----------------------------------------------------------
-
-  const breakdown = (result.breakdown || [])
-    .map((item) => {
-
-      const category =
-        item?.factor ||
-        item?.category ||
-        item?.title ||
-        item?.label ||
-        'Risk factor'
-
-      const score = safeScore(
-        item?.impact ??
-        item?.score ??
-        item?.weight ??
-        0
-      )
-
-      const reason =
-        item?.reason ||
-        item?.description ||
-        ''
-
-      return `
-        <div class="breakdown-item">
-
-          <div>
-
-            <span>
-              ${esc(category)}
-            </span>
-
-            <strong>
-              ${score}
-            </strong>
-
-          </div>
-
-          <div class="bar">
-
-            <i
-              style="width:${score}%"
-            ></i>
-
-          </div>
-
-          <p>
-            ${esc(reason)}
-          </p>
-
-        </div>
-      `
-    })
-    .join('')
-
-
-  const breakdownHtml =
-    breakdown ||
-    `
-      <div class="empty-result">
-        No threat breakdown was returned.
-      </div>
-    `
-
-
-  // ----------------------------------------------------------
-  // VERIFICATION
-  // ----------------------------------------------------------
-
-  const verification =
-    (result.verificationSteps || [])
-      .map(
-        (item, index) => `
-          <li>
-
-            <span>
-              ${index + 1}
-            </span>
-
-            ${esc(item)}
-
-          </li>
-        `
-      )
-      .join('')
-
-
-  const verificationHtml =
-    verification ||
-    `
-      <li>
-
-        <span>
-          1
-        </span>
-
-        Verify the employer through an independently found official channel.
-
-      </li>
-    `
-
-
-  // ----------------------------------------------------------
-  // DON'T SHARE
-  // ----------------------------------------------------------
-
-  const dontShare =
-    (result.doNotShare || [])
-      .map(
-        (item) => `
-          <li>
-
-            <span>
-              !
-            </span>
-
-            ${esc(item)}
-
-          </li>
-        `
-      )
-      .join('')
-
-
-  const dontShareHtml =
-    dontShare ||
-    `
-      <li>
-
-        <span>
-          !
-        </span>
-
-        Do not share sensitive identity, banking or authentication information.
-
-      </li>
-    `
-
-
-  // ----------------------------------------------------------
-  // LIMITATIONS
-  // ----------------------------------------------------------
-
-  const limitations =
-    (result.limitations || [])
-      .map(
-        (item) => `
-          <li>
-            ${esc(item)}
-          </li>
-        `
-      )
-      .join('')
-
-
-  const limitationsHtml =
-    limitations ||
-    `
-      <li>
-        No additional limitations were returned.
-      </li>
-    `
-
-
-  // ----------------------------------------------------------
-  // DOMAIN
-  // ----------------------------------------------------------
+  const score = result.threatScore;
+  const riskClass = getRiskClass(score);
+  const riskLabel = getRiskLabel(score);
 
   const domain =
-    result.meta?.domain ||
-    'No domain supplied'
-
+    data?.meta?.domain || "Not provided";
 
   const domainAgeVerified =
-    result.meta?.domainAgeVerified === true
+    data?.meta?.domainAgeVerified === true;
 
+  elements.result.innerHTML = `
+    <div class="result-page">
 
-  const rdap =
-    domainAgeVerified
-      ? 'Domain age verified'
-      : 'Domain age not verified'
-
-
-  // ----------------------------------------------------------
-  // SCORE RING
-  // ----------------------------------------------------------
-
-  const ringDegrees =
-    Math.min(
-      360,
-      threatScore * 3.6
-    )
-
-
-  // ----------------------------------------------------------
-  // RESULT PAGE
-  // ----------------------------------------------------------
-
-  resultView.innerHTML = `
-
-    <section class="result-page">
-
-
-      <div class="result-topline">
+      <div class="result-header">
 
         <div>
-
           <span class="section-kicker">
-            SCAN COMPLETE
+            ANALYSIS COMPLETE
           </span>
 
-          <h1>
-            Your risk picture
+          <h1 id="result-title">
+            ScamShield AI Assessment
           </h1>
 
           <p>
-            ScamShield found the signals below
-            in the submitted material.
+            ${formatText(result.summary)}
           </p>
-
         </div>
 
-
         <button
-          class="ghost-button"
-          id="newScan"
+          type="button"
+          class="scan-button compact"
+          data-nav="scanner"
         >
-          ↻ New scan
+          ← Scan another
         </button>
 
       </div>
 
 
+      <section class="result-overview">
 
-      <!-- SCORE -->
+        <div class="score-card ${riskClass}">
 
-      <div class="score-panel ${tone}">
-
-        <div
-          class="score-ring"
-          style="--score:${ringDegrees}deg"
-        >
-
-          <div>
-
-            <strong>
-              ${threatScore}
-            </strong>
-
-            <span>
-              /100
-            </span>
-
-          </div>
-
-        </div>
-
-
-        <div class="score-copy">
-
-          <span
-            class="risk-chip ${tone}"
-          >
-            ${esc(
-              result.riskLevel ||
-              'unknown'
-            )}
+          <span class="score-label">
+            THREAT INDEX
           </span>
 
+          <div class="score-value">
+            ${score}
+            <small>/100</small>
+          </div>
 
-          <h2>
-            ${esc(
-              result.verdict ||
-              'Analysis complete'
-            )}
-          </h2>
-
+          <div class="risk-badge">
+            ${riskLabel}
+          </div>
 
           <p>
-            ${esc(
-              result.summary ||
-              'The submitted material was analyzed for scam indicators.'
-            )}
+            ${formatText(result.verdict)}
           </p>
 
-
-          <div class="confidence">
-
-            <span>
-              Analysis confidence
-            </span>
-
-            <strong>
-              ${confidence}%
-            </strong>
-
-            <div>
-
-              <i
-                style="width:${confidence}%"
-              ></i>
-
-            </div>
-
-          </div>
-
         </div>
 
-      </div>
 
+        <div class="confidence-card">
 
-
-      <!-- RED FLAGS + BREAKDOWN -->
-
-      <div class="result-grid">
-
-
-        <!-- RED FLAGS -->
-
-        <section class="result-card">
-
-          <div class="result-card-title">
-
-            <span>
-              △ Red flags
-            </span>
-
-            <small>
-              ${result.redFlags?.length || 0}
-              detected
-            </small>
-
-          </div>
-
-
-          <div class="flag-list">
-            ${flagsHtml}
-          </div>
-
-        </section>
-
-
-
-        <!-- THREAT BREAKDOWN -->
-
-        <section class="result-card">
-
-          <div class="result-card-title">
-
-            <span>
-              ϟ Threat breakdown
-            </span>
-
-            <small>
-              Evidence-weighted view
-            </small>
-
-          </div>
-
-
-          <div class="breakdown-list">
-            ${breakdownHtml}
-          </div>
-
-        </section>
-
-      </div>
-
-
-
-      <!-- RECOMMENDATIONS -->
-
-      <div class="recommend-grid">
-
-
-        <!-- VERIFY -->
-
-        <section class="recommend-card safe">
-
-          <div class="recommend-title">
-
-            <span>
-              ✓
-            </span>
-
-            <h3>
-              Verify before you trust
-            </h3>
-
-          </div>
-
-
-          <ul>
-            ${verificationHtml}
-          </ul>
-
-        </section>
-
-
-
-        <!-- DON'T SHARE -->
-
-        <section class="recommend-card danger">
-
-          <div class="recommend-title">
-
-            <span>
-              !
-            </span>
-
-            <h3>
-              Don't share yet
-            </h3>
-
-          </div>
-
-
-          <ul>
-            ${dontShareHtml}
-          </ul>
-
-        </section>
-
-      </div>
-
-
-
-      <!-- LIMITATIONS -->
-
-      <div class="limitations-card">
-
-        <div>
-
-          ⓘ
+          <span class="section-kicker">
+            AI CONFIDENCE
+          </span>
 
           <strong>
-            What ScamShield could not verify
+            ${result.confidence}%
           </strong>
+
+          <p>
+            Confidence reflects how strongly the supplied
+            evidence supports the assessment.
+          </p>
 
         </div>
 
 
-        <ul>
-          ${limitationsHtml}
-        </ul>
+        <div class="domain-card">
+
+          <span class="section-kicker">
+            DOMAIN CONTEXT
+          </span>
+
+          <strong>
+            ${formatText(domain)}
+          </strong>
+
+          <p>
+            Domain age:
+            ${
+              domainAgeVerified
+                ? "Verified"
+                : "Not verified"
+            }
+          </p>
+
+        </div>
+
+      </section>
+
+
+      <section class="result-grid">
+
+        <article class="result-card danger-card">
+
+          <div class="result-card-heading">
+            <span aria-hidden="true">!</span>
+
+            <div>
+              <span class="section-kicker">
+                WARNING SIGNALS
+              </span>
+
+              <h2>Red flags</h2>
+            </div>
+          </div>
+
+          <ul class="result-list">
+            ${renderList(
+              result.redFlags,
+              "No major red flags identified."
+            )}
+          </ul>
+
+        </article>
+
+
+        <article class="result-card">
+
+          <div class="result-card-heading">
+            <span aria-hidden="true">◎</span>
+
+            <div>
+              <span class="section-kicker">
+                POSITIVE EVIDENCE
+              </span>
+
+              <h2>Positive signals</h2>
+            </div>
+          </div>
+
+          <ul class="result-list">
+            ${renderList(
+              result.positiveSignals,
+              "No strong positive signals identified."
+            )}
+          </ul>
+
+        </article>
+
+
+        <article class="result-card wide-card">
+
+          <div class="result-card-heading">
+            <span aria-hidden="true">◷</span>
+
+            <div>
+              <span class="section-kicker">
+                EXPLAINABILITY
+              </span>
+
+              <h2>Risk breakdown</h2>
+            </div>
+          </div>
+
+          <div class="breakdown-list">
+            ${renderBreakdown(result.breakdown)}
+          </div>
+
+        </article>
+
+
+        <article class="result-card">
+
+          <div class="result-card-heading">
+            <span aria-hidden="true">✓</span>
+
+            <div>
+              <span class="section-kicker">
+                NEXT STEPS
+              </span>
+
+              <h2>How to verify</h2>
+            </div>
+          </div>
+
+          <ol class="result-list numbered-list">
+            ${renderList(
+              result.verificationSteps,
+              "No specific verification steps returned."
+            )}
+          </ol>
+
+        </article>
+
+
+        <article class="result-card danger-card">
+
+          <div class="result-card-heading">
+            <span aria-hidden="true">⌑</span>
+
+            <div>
+              <span class="section-kicker">
+                PROTECTION
+              </span>
+
+              <h2>Do not share</h2>
+            </div>
+          </div>
+
+          <ul class="result-list">
+            ${renderList(
+              result.doNotShare,
+              "No sensitive information was specifically flagged."
+            )}
+          </ul>
+
+        </article>
+
+
+        <article class="result-card wide-card">
+
+          <div class="result-card-heading">
+            <span aria-hidden="true">?</span>
+
+            <div>
+              <span class="section-kicker">
+                LIMITATIONS
+              </span>
+
+              <h2>What ScamShield cannot verify</h2>
+            </div>
+          </div>
+
+          <ul class="result-list">
+            ${renderList(
+              result.limitations,
+              "No additional limitations reported."
+            )}
+          </ul>
+
+        </article>
+
+      </section>
+
+
+      <div class="result-disclaimer">
+
+        <strong>
+          Important:
+        </strong>
+
+        ScamShield provides automated defensive screening.
+        A score does not prove that an offer is fraudulent or legitimate.
+        Independently verify employers before paying or sharing sensitive
+        information.
 
       </div>
 
+    </div>
+  `;
+
+  showView("result");
+
+  attachDynamicNavigation();
+}
 
 
-      <!-- META -->
+/* =========================================================
+   Dynamic Navigation
+   ========================================================= */
 
-      <div class="scan-meta">
-
-        <span>
-          ◎ ${esc(domain)}
-        </span>
-
-        <span>
-          ⌕ ${esc(rdap)}
-        </span>
-
-        <span>
-          ✦ Google Gemini analysis
-        </span>
-
-      </div>
+function attachDynamicNavigation() {
+  elements.result
+    ?.querySelectorAll("[data-nav]")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        showView(button.dataset.nav);
+      });
+    });
+}
 
 
-    </section>
+/* =========================================================
+   Scan Workflow
+   ========================================================= */
 
-  `
+async function handleScan() {
+  if (state.isScanning) {
+    return;
+  }
 
+  hideError();
 
-  // ----------------------------------------------------------
-  // NEW SCAN
-  // ----------------------------------------------------------
+  const input = getInput();
 
-  const newScanButton = $('#newScan')
+  const validationError = validateInput(input);
 
+  if (validationError) {
+    showError(validationError);
+    return;
+  }
 
-  if (newScanButton) {
+  state.isScanning = true;
 
-    newScanButton.addEventListener(
-      'click',
-      () => {
+  setLoading(true);
 
-        showView('scanner')
+  try {
+    const data = await analyzeOffer(input);
 
-        resultView.innerHTML = ''
+    renderResults(data);
 
-      }
-    )
+  } catch (error) {
 
+    console.error("ScamShield scan failed:", error);
+
+    showError(
+      error?.message ||
+      "The AI analysis failed. Please try again."
+    );
+
+  } finally {
+
+    state.isScanning = false;
+
+    setLoading(false);
   }
 }
+
+
+/* =========================================================
+   Event Listeners
+   ========================================================= */
+
+function initializeEvents() {
+
+  elements.offer?.addEventListener(
+    "input",
+    updateCharacterCount
+  );
+
+  elements.scanBtn?.addEventListener(
+    "click",
+    handleScan
+  );
+
+  initializeDemo();
+  initializeErrorHandling();
+  initializeNavigation();
+}
+
+
+/* =========================================================
+   Initialization
+   ========================================================= */
+
+function initializeApp() {
+
+  // Hide non-active views initially.
+  document.querySelectorAll(".view").forEach((view) => {
+    view.hidden = !view.classList.contains("active");
+  });
+
+  updateCharacterCount();
+
+  hideError();
+
+  initializeEvents();
+
+  console.log("ScamShield AI initialized.");
+}
+
+
+document.addEventListener(
+  "DOMContentLoaded",
+  initializeApp
+);
