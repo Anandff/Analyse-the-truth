@@ -1,17 +1,22 @@
 {
   "name": "scamshield-ai",
   "version": "1.0.0",
-  "description": "> Don't lose your dream job to a fake offer.",
-  "main": "app.js",
+  "private": true,
+  "description": "ScamShield AI — Fake Offer and Phishing Inspector",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node --env-file=.env dev-server.cjs"
   },
-  "keywords": [],
+  "keywords": [
+    "cybersecurity",
+    "scam-detection",
+    "gemini",
+    "ai",
+    "phishing"
+  ],
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@google/genai": "^2.24.0",
-    "dotenv": "^18.0.2"
+    "@google/genai": "^2.24.0"
   }
 }

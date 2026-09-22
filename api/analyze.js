@@ -3,9 +3,21 @@ const { GoogleGenAI } = require("@google/genai");
 const MODEL = "gemini-3.5-flash-lite";
 
 function sendJson(res, statusCode, data) {
-  return res
-    .status(statusCode)
-    .json(data)
+  // Vercel serverless response
+  if (typeof res.status === "function" && typeof res.json === "function") {
+    return res.status(statusCode).json(data)
+  }
+
+  // Local Node HTTP response
+  if (!res.headersSent) {
+    res.writeHead(statusCode, {
+      "Content-Type": "application/json; charset=utf-8",
+      "Access-Control-Allow-Origin": "*",
+      "Cache-Control": "no-store"
+    })
+
+    res.end(JSON.stringify(data))
+  }
 }
 
 function clamp(value, min, max) {
@@ -75,13 +87,19 @@ function normalizeResult(result) {
 
 module.exports = async function handler(req, res) {
   if (req.method === "OPTIONS") {
-    res.writeHead(204, {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    });
-    return res.end();
+  if (typeof res.setHeader === "function") {
+    res.setHeader("Access-Control-Allow-Origin", "*")
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type")
   }
+
+  if (typeof res.status === "function") {
+    return res.status(204).end()
+  }
+
+  res.writeHead(204)
+  return res.end()
+}
 
   if (req.method !== "POST") {
     return sendJson(res, 405, {
