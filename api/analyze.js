@@ -85,7 +85,7 @@ function normalizeResult(result) {
   };
 }
 
-module.exports = async function handler(req, res) {
+async function handler(req, res) {
   if (req.method === "OPTIONS") {
   if (typeof res.setHeader === "function") {
     res.setHeader("Access-Control-Allow-Origin", "*")
@@ -306,4 +306,7 @@ console.log("Gemini response received.");
         "The AI analysis failed. Please try again.",
     });
   }
-};
+}
+module.exports = handler;
+module.exports.clamp = clamp;
+module.exports.normalizeResult = normalizeResult;

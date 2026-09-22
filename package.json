@@ -4,8 +4,10 @@
   "private": true,
   "description": "ScamShield AI — Fake Offer and Phishing Inspector",
   "scripts": {
-    "dev": "node --env-file=.env dev-server.cjs"
-  },
+  "dev": "node --env-file=.env dev-server.cjs",
+  "test": "node --test",
+  "test:watch": "node --test --watch"
+},
   "keywords": [
     "cybersecurity",
     "scam-detection",
