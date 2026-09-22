@@ -3,13 +3,9 @@ const { GoogleGenAI } = require("@google/genai");
 const MODEL = "gemini-3.5-flash-lite";
 
 function sendJson(res, statusCode, data) {
-  res.writeHead(statusCode, {
-    "Content-Type": "application/json; charset=utf-8",
-    "Access-Control-Allow-Origin": "*",
-    "Cache-Control": "no-store",
-  });
-
-  res.end(JSON.stringify(data));
+  return res
+    .status(statusCode)
+    .json(data)
 }
 
 function clamp(value, min, max) {
